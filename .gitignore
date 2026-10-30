@@ -1,0 +1,9 @@
+node_modules/
+data/
+coverage/
+.env
+*.log
+.vscode/settings.json
+.pipeline-docker/
+.pipeline-kubeconfig
+artifacts/

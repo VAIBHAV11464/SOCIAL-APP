@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A simple place to share updates and connect.">
+  <title>Social App</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Social App home"><span class="brand-mark">s.</span><span>social<span class="brand-dot">.</span></span></a>
+      <span class="version" id="version">Social App</span>
+    </header>
+    <main>
+      <section class="intro">
+        <span class="eyebrow">YOUR LITTLE CORNER OF THE INTERNET</span>
+        <h1>Small updates.<br><span>Good conversations.</span></h1>
+        <p>A place to share what’s on your mind and see what everyone’s up to.</p>
+      </section>
+      <section class="composer card" aria-labelledby="composer-title">
+        <div class="section-label"><span class="avatar">Y</span><div><h2 id="composer-title">Share an update</h2><p>A thought, a small win, or something new.</p></div></div>
+        <form id="post-form">
+          <label for="author">Your name</label>
+          <input id="author" name="author" placeholder="How should we call you?" maxlength="40" autocomplete="nickname" required>
+          <label for="content">What’s on your mind?</label>
+          <textarea id="content" name="content" placeholder="Share something with the community…" maxlength="500" rows="3" required></textarea>
+          <div class="composer-bottom"><span id="character-count">0 / 500</span><button class="primary" type="submit">Share post <span aria-hidden="true">↗</span></button></div>
+        </form>
+      </section>
+      <section class="feed-section" aria-labelledby="feed-title">
+        <div class="feed-heading"><div><span class="eyebrow">THE LATEST</span><h2 id="feed-title">Community feed</h2></div><span class="post-count" id="post-count">0 posts</span></div>
+        <div class="notice" id="notice" role="status" aria-live="polite" hidden></div>
+        <div id="feed" aria-live="polite"><div class="empty card"><span class="empty-icon" aria-hidden="true">✦</span><h3>Your community starts here</h3><p>Be the first to share a thought. It doesn’t have to be a big one.</p></div></div>
+      </section>
+    </main>
+    <footer><span>Made for everyday moments.</span><span id="footer-version">Social App</span></footer>
+  </div>
+  <template id="post-template">
+    <article class="post card">
+      <div class="post-header"><span class="avatar post-avatar"></span><div><h3 class="post-author"></h3><time class="post-date"></time></div><span class="post-more" aria-hidden="true">•••</span></div>
+      <p class="post-content"></p>
+    </article>
+  </template>
+</body>
+</html>
