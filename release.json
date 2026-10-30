@@ -1,4 +1,8 @@
 {
-  "version": "v1",
-  "features": { "posts": true, "likes": false, "comments": false }
+  "version": "v2",
+  "features": {
+    "posts": true,
+    "likes": true,
+    "comments": false
+  }
 }

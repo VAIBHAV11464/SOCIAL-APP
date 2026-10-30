@@ -42,8 +42,31 @@ test('posts survive an application restart', async () => {
   assert.deepEqual((await request('/api/posts')).body, posts);
 });
 test('unsupported versions of actions and filesystem paths return 404', async () => {
-  assert.equal((await request('/api/posts/1/like', {})).status, 404);
+  if (!release.features.likes) assert.equal((await request('/api/posts/1/like', {})).status, 404);
   assert.equal((await request('/api/posts/1/comments', {})).status, 404);
   const res = await fetch(base + '/package.json');
   assert.equal(res.status, 404);
+});
+
+test('likes are idempotent for one browser and can be removed', async () => {
+  const post = (await request('/api/posts', { author: 'Tester', content: 'Like this update' })).body;
+  const path = `/api/posts/${post.id}/like`;
+  const data = { clientId: 'browser-test-111111', liked: true };
+  assert.equal((await request(path, data)).body.like_count, 1);
+  assert.equal((await request(path, data)).body.like_count, 1);
+  assert.equal((await request(path, { ...data, liked: false })).body.like_count, 0);
+  assert.equal((await request(path, { ...data, liked: false })).body.like_count, 0);
+});
+test('likes from different browsers are counted and persist after restart', async () => {
+  const post = (await request('/api/posts', { author: 'Tester', content: 'A community update' })).body;
+  const path = `/api/posts/${post.id}/like`;
+  await request(path, { clientId: 'browser-test-222222', liked: true });
+  await request(path, { clientId: 'browser-test-333333', liked: true });
+  await stop(); await start();
+  const posts = (await request('/api/posts')).body;
+  assert.equal(posts.find(p => p.id === post.id).like_count, 2);
+});
+test('invalid likes and unknown posts are rejected', async () => {
+  assert.equal((await request('/api/posts/1/like', {})).status, 400);
+  assert.equal((await request('/api/posts/999999/like', { clientId: 'browser-test-444444', liked: true })).status, 404);
 });

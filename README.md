@@ -8,7 +8,7 @@ Three incremental releases of a centered dark social feed. The existing working 
 | v2 | Posts and likes | http://localhost:30002 |
 | v3 | Posts, likes and comments | http://localhost:30003 |
 
-This checkout contains **v1**. Select another release with `git switch --detach v1` (or v2/v3), or the corresponding `release/v1` branch. Each release has a separate commit, branch, Git tag, image tag, Kubernetes deployment, service and SQLite persistent volume.
+This checkout contains **v2**. Select another release with `git switch --detach v1` (or v2/v3), or the corresponding `release/v1` branch. Each release has a separate commit, branch, Git tag, image tag, Kubernetes deployment, service and SQLite persistent volume.
 
 ## Run locally
 
@@ -27,10 +27,10 @@ The root Jenkinsfile checks out the selected tag, runs checks and tests, builds 
 Example manual commands:
 
 ```powershell
-docker build -t vaibhav11464/social-app:v1 .
-docker push vaibhav11464/social-app:v1
-.\scripts\deploy.ps1 -Version v1 -Image vaibhav11464/social-app:v1
-.\scripts\verify.ps1 -Version v1
+docker build -t vaibhav11464/social-app:v2 .
+docker push vaibhav11464/social-app:v2
+.\scripts\deploy.ps1 -Version v2 -Image vaibhav11464/social-app:v2
+.\scripts\verify.ps1 -Version v2
 .\scripts\start-demo.ps1
 ```
 

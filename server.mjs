@@ -22,6 +22,11 @@ export function createApp(databasePath = process.env.DB_PATH || join(root, 'data
       author TEXT NOT NULL,
       content TEXT NOT NULL,
       created_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS likes (
+      post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+      client_id TEXT NOT NULL,
+      PRIMARY KEY (post_id, client_id)
     );`);
 
   const json = (res, status, value) => {
@@ -59,7 +64,11 @@ export function createApp(databasePath = process.env.DB_PATH || join(root, 'data
       if (req.method === 'GET' && pathname === '/health') return json(res, 200, { status: 'ok', version: release.version });
       if (req.method === 'GET' && pathname === '/api/config') return json(res, 200, release);
       if (req.method === 'GET' && pathname === '/api/posts') {
-        return json(res, 200, db.prepare('SELECT * FROM posts ORDER BY id DESC').all());
+        const viewer = typeof req.headers['x-client-id'] === 'string' ? req.headers['x-client-id'] : '';
+        return json(res, 200, db.prepare(`SELECT posts.*,
+          (SELECT COUNT(*) FROM likes WHERE post_id = posts.id) AS like_count,
+          EXISTS(SELECT 1 FROM likes WHERE post_id = posts.id AND client_id = ?) AS liked
+          FROM posts ORDER BY id DESC`).all(viewer));
       }
       if (req.method === 'POST' && pathname === '/api/posts') {
         const body = await readBody(req);
@@ -67,6 +76,19 @@ export function createApp(databasePath = process.env.DB_PATH || join(root, 'data
         const content = text(body.content, 'Post', 500);
         const result = db.prepare('INSERT INTO posts (author, content, created_at) VALUES (?, ?, ?)').run(author, content, new Date().toISOString());
         return json(res, 201, db.prepare('SELECT * FROM posts WHERE id = ?').get(result.lastInsertRowid));
+      }
+      const likeMatch = pathname.match(/^\/api\/posts\/(\d+)\/like$/);
+      if (release.features.likes && req.method === 'POST' && likeMatch) {
+        const id = Number(likeMatch[1]);
+        const body = await readBody(req);
+        if (typeof body.clientId !== 'string' || !/^[A-Za-z0-9_-]{12,80}$/.test(body.clientId) || typeof body.liked !== 'boolean') {
+          return json(res, 400, { error: 'A browser identifier and like state are required.' });
+        }
+        if (!db.prepare('SELECT id FROM posts WHERE id = ?').get(id)) return json(res, 404, { error: 'That post could not be found.' });
+        if (body.liked) db.prepare('INSERT OR IGNORE INTO likes (post_id, client_id) VALUES (?, ?)').run(id, body.clientId);
+        else db.prepare('DELETE FROM likes WHERE post_id = ? AND client_id = ?').run(id, body.clientId);
+        const count = db.prepare('SELECT COUNT(*) AS count FROM likes WHERE post_id = ?').get(id).count;
+        return json(res, 200, { like_count: count, liked: body.liked });
       }
       if (req.method === 'GET' && assets.has(pathname)) {
         const [filename, type] = assets.get(pathname);
