@@ -43,7 +43,11 @@
     <article class="post card">
       <div class="post-header"><span class="avatar post-avatar"></span><div><h3 class="post-author"></h3><time class="post-date"></time></div><span class="post-more" aria-hidden="true">•••</span></div>
       <p class="post-content"></p>
-      <div class="post-actions"><button class="like-button action" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg><span class="like-label">Like</span></button></div>
+      <div class="post-actions"><button class="like-button action" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg><span class="like-label">Like</span></button><button class="comment-toggle action" type="button" aria-expanded="false"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-3 3V11.5A8.5 8.5 0 0 1 9.5 3h3a8.5 8.5 0 0 1 8.5 8.5Z"/></svg><span class="comment-label">Comment</span></button></div>
+      <section class="comment-section" aria-label="Post comments" hidden>
+        <div class="comment-list"></div>
+        <form class="comment-form"><label class="visually-hidden">Your comment</label><input class="comment-input" placeholder="Write a comment…" maxlength="250" required><button class="comment-submit" type="submit">Reply</button></form>
+      </section>
     </article>
   </template>
 </body>

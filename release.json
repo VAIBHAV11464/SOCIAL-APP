@@ -1,8 +1,8 @@
 {
-  "version": "v2",
+  "version": "v3",
   "features": {
     "posts": true,
     "likes": true,
-    "comments": false
+    "comments": true
   }
 }

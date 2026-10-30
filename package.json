@@ -1,6 +1,6 @@
 {
   "name": "social-app",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "private": true,
   "description": "A small social feed built in three incremental releases",
   "type": "module",

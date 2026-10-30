@@ -126,6 +126,56 @@ async function refreshFeed() {
 
     });
 
+    article.dataset.postId = post.id;
+    const commentToggle = $('.comment-toggle', article);
+    const commentSection = $('.comment-section', article);
+    const comments = post.comments || [];
+    $('.comment-label', article).textContent = `Comment${comments.length ? ` \u00b7 ${comments.length}` : ''}`;
+    const expandComments = (open) => {
+      commentSection.hidden = !open;
+      commentToggle.setAttribute('aria-expanded', String(open));
+    };
+    expandComments(comments.length > 0);
+    commentToggle.addEventListener('click', () => {
+      expandComments(commentSection.hidden);
+      if (!commentSection.hidden) $('.comment-input', article).focus();
+    });
+    for (const comment of comments) {
+      const entry = document.createElement('div');
+      entry.className = 'comment';
+      const meta = document.createElement('div');
+      meta.className = 'comment-meta';
+      const name = document.createElement('span');
+      name.className = 'comment-author';
+      name.textContent = comment.author;
+      const time = document.createElement('time');
+      time.className = 'comment-time';
+      time.dateTime = comment.created_at;
+      time.textContent = new Date(comment.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+      meta.append(name, time);
+      const body = document.createElement('p');
+      body.textContent = comment.content;
+      entry.append(meta, body);
+      $('.comment-list', article).append(entry);
+    }
+    const commentForm = $('.comment-form', article);
+    const commentInput = $('.comment-input', article);
+    commentInput.id = `comment-${post.id}`;
+    $('label', commentForm).htmlFor = commentInput.id;
+    commentForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!author.value.trim()) { notify('Add your name above before replying.', true); author.focus(); return; }
+      if (!commentForm.reportValidity()) return;
+      const submit = $('button', commentForm);
+      submit.disabled = true;
+      try {
+        await api(`/api/posts/${post.id}/comments`, { method: 'POST', body: JSON.stringify({ author: author.value, content: commentInput.value }) });
+        rememberName();
+        await refreshFeed();
+        notify('Your reply has been added.');
+      } catch (error) { notify(error.message, true); }
+      finally { submit.disabled = false; }
+    });
     feed.append(article);
 
   }
@@ -168,7 +218,7 @@ try {
 
   release = await api('/api/config');
 
-  $('#version').textContent = `${release.version} · Posts + likes`;
+  $('#version').textContent = `${release.version} · Posts + likes + comments`;
 
   $('#footer-version').textContent = `Social App / ${release.version}`;
 

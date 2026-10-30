@@ -43,7 +43,7 @@ test('posts survive an application restart', async () => {
 });
 test('unsupported versions of actions and filesystem paths return 404', async () => {
   if (!release.features.likes) assert.equal((await request('/api/posts/1/like', {})).status, 404);
-  assert.equal((await request('/api/posts/1/comments', {})).status, 404);
+  if (!release.features.comments) assert.equal((await request('/api/posts/1/comments', {})).status, 404);
   const res = await fetch(base + '/package.json');
   assert.equal(res.status, 404);
 });
@@ -69,4 +69,24 @@ test('likes from different browsers are counted and persist after restart', asyn
 test('invalid likes and unknown posts are rejected', async () => {
   assert.equal((await request('/api/posts/1/like', {})).status, 400);
   assert.equal((await request('/api/posts/999999/like', { clientId: 'browser-test-444444', liked: true })).status, 404);
+});
+
+test('comments are added to the correct post and returned in order', async () => {
+  const post = (await request('/api/posts', { author: 'Tester', content: 'Let us discuss this' })).body;
+  const path = `/api/posts/${post.id}/comments`;
+  assert.equal((await request(path, { author: 'Maya', content: 'A useful update!' })).status, 201);
+  await request(path, { author: 'Vaibhav', content: 'Thank you for the reply.' });
+  const result = (await request('/api/posts')).body.find(p => p.id === post.id);
+  assert.deepEqual(result.comments.map(c => c.author), ['Maya', 'Vaibhav']);
+});
+test('empty and oversized comments and unknown posts are rejected', async () => {
+  const path = '/api/posts/1/comments';
+  assert.equal((await request(path, { author: 'Tester', content: ' ' })).status, 400);
+  assert.equal((await request(path, { author: 'Tester', content: 'x'.repeat(251) })).status, 400);
+  assert.equal((await request('/api/posts/999999/comments', { author: 'Tester', content: 'Hello' })).status, 404);
+});
+test('comments remain stored after restarting the application', async () => {
+  const before = (await request('/api/posts')).body;
+  await stop(); await start();
+  assert.deepEqual((await request('/api/posts')).body, before);
 });

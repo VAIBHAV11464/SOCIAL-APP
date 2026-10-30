@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
 import { readFileSync, mkdirSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 
@@ -27,7 +27,15 @@ export function createApp(databasePath = process.env.DB_PATH || join(root, 'data
       post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
       client_id TEXT NOT NULL,
       PRIMARY KEY (post_id, client_id)
-    );`);
+    );
+    CREATE TABLE IF NOT EXISTS comments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+      author TEXT NOT NULL,
+      content TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS comments_post ON comments(post_id);`);
 
   const json = (res, status, value) => {
     res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
@@ -65,10 +73,12 @@ export function createApp(databasePath = process.env.DB_PATH || join(root, 'data
       if (req.method === 'GET' && pathname === '/api/config') return json(res, 200, release);
       if (req.method === 'GET' && pathname === '/api/posts') {
         const viewer = typeof req.headers['x-client-id'] === 'string' ? req.headers['x-client-id'] : '';
-        return json(res, 200, db.prepare(`SELECT posts.*,
+        const posts = db.prepare(`SELECT posts.*,
           (SELECT COUNT(*) FROM likes WHERE post_id = posts.id) AS like_count,
           EXISTS(SELECT 1 FROM likes WHERE post_id = posts.id AND client_id = ?) AS liked
-          FROM posts ORDER BY id DESC`).all(viewer));
+          FROM posts ORDER BY id DESC`).all(viewer);
+        for (const post of posts) post.comments = db.prepare('SELECT * FROM comments WHERE post_id = ? ORDER BY id ASC').all(post.id);
+        return json(res, 200, posts);
       }
       if (req.method === 'POST' && pathname === '/api/posts') {
         const body = await readBody(req);
@@ -90,6 +100,16 @@ export function createApp(databasePath = process.env.DB_PATH || join(root, 'data
         const count = db.prepare('SELECT COUNT(*) AS count FROM likes WHERE post_id = ?').get(id).count;
         return json(res, 200, { like_count: count, liked: body.liked });
       }
+      const commentMatch = pathname.match(/^\/api\/posts\/(\d+)\/comments$/);
+      if (release.features.comments && req.method === 'POST' && commentMatch) {
+        const id = Number(commentMatch[1]);
+        const body = await readBody(req);
+        const author = text(body.author, 'Name', 40);
+        const content = text(body.content, 'Comment', 250);
+        if (!db.prepare('SELECT id FROM posts WHERE id = ?').get(id)) return json(res, 404, { error: 'That post could not be found.' });
+        const result = db.prepare('INSERT INTO comments (post_id, author, content, created_at) VALUES (?, ?, ?, ?)').run(id, author, content, new Date().toISOString());
+        return json(res, 201, db.prepare('SELECT * FROM comments WHERE id = ?').get(result.lastInsertRowid));
+      }
       if (req.method === 'GET' && assets.has(pathname)) {
         const [filename, type] = assets.get(pathname);
         res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'no-cache' });
@@ -105,7 +125,7 @@ export function createApp(databasePath = process.env.DB_PATH || join(root, 'data
   return server;
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === fileURLToPath(new URL(`file:///${process.argv[1].replaceAll('\\', '/').replace(/^\//, '')}`))) {
+if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
   const port = Number(process.env.PORT || 3000);
   const server = createApp();
   server.listen(port, '0.0.0.0', () => console.log(`Social App ${release.version} is ready at http://localhost:${port}`));
